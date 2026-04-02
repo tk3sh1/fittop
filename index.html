@@ -91,25 +91,34 @@
         const boughtData = urlParams.get('bought') || "";
         const boughtPrograms = boughtData.split(',');
 
+        // Получаем параметры из URL
+        const completedData = urlParams.get('completed') || "";
+        const completedLessons = completedData.split(',').map(Number);
+        
         // 3. Функция отрисовки каталога
         function render() {
             const container = document.getElementById('catalog');
             container.innerHTML = '';
-
+        
             programs.forEach(p => {
                 const isBought = boughtPrograms.includes(p.id);
-                
-                const card = document.createElement('div');
-                card.className = 'card';
-                card.innerHTML = `
-                    <div class="card-title">${p.title}</div>
-                    <div class="card-desc">${p.desc}</div>
-                    ${isBought 
-                        ? `<button class="watch-btn" onclick="openVideo('${p.id}')">▶ Смотреть курс</button>`
-                        : `<button class="buy-btn" onclick="buy('${p.id}')">Купить за ${p.price}</button>`
-                    }
+                const isDone = completedLessons.includes(1); // Для примера проверяем 1-й урок
+        
+                container.innerHTML += `
+                    <div class="card" style="${isDone ? 'border: 2px solid #4CAF50;' : ''}">
+                        <div class="card-title">${p.title} ${isDone ? '✅' : ''}</div>
+                        <div class="card-desc">${p.desc}</div>
+                        ${isBought 
+                            ? `
+                                <button class="watch-btn" onclick="openVideo('${p.id}')">▶ Смотреть</button>
+                                <button onclick="markDone('${p.id}', 1)" style="margin-top:8px; background:none; color:var(--hint); font-size:12px;">
+                                    ${isDone ? 'Выполнено' : 'Отметить как выполненное'}
+                                </button>
+                              `
+                            : `<button class="buy-btn" onclick="buy('${p.id}')">Купить за ${p.price}</button>`
+                        }
+                    </div>
                 `;
-                container.appendChild(card);
             });
         }
 
