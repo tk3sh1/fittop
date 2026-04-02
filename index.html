@@ -64,7 +64,10 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-
+        
+        // ДОБАВЬ ЭТУ СТРОКУ ДЛЯ ПРОВЕРКИ:
+        alert("Параметры в ссылке: " + window.location.search);
+        
         // 1. Наш контент (база данных программ)
         const programs = [
             {
