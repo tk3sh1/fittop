@@ -80,7 +80,18 @@
         }
 
         function buy(id) { tg.sendData(JSON.stringify({program_id: id})); }
-        function markDone(pId, lId) { tg.sendData(JSON.stringify({action: 'complete_lesson', program_id: pId, lesson_id: lId})); }
+        function markDone(pId, lId) {
+            // Сохраняем в облако Telegram (лимит 1кб на ключ)
+            const key = `progress_${pId}`;
+            completedLessons.push(lId);
+            
+            tg.CloudStorage.setItem(key, completedLessons.join(','), (err, success) => {
+                if (success) {
+                    render(); // Обновляем UI без закрытия окна
+                    tg.HapticFeedback.notificationOccurred('success'); // Вибрация "успех"
+                }
+            });
+        }
         function openVideo(url) {
             document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
             document.getElementById('videoModal').style.display = 'flex';
