@@ -16,67 +16,48 @@
         }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            font-family: -apple-system, sans-serif;
             background-color: var(--bg);
             color: var(--text);
             margin: 0; padding: 16px;
-            display: flex; flex-direction: column; gap: 16px;
         }
-
-        .header { text-align: center; margin-bottom: 8px; }
-        .header h1 { font-size: 24px; margin: 0; }
-        .header p { color: var(--hint); font-size: 14px; }
 
         .card {
             background-color: var(--sec-bg);
             border-radius: 16px;
-            overflow: hidden;
-            display: flex; flex-direction: column;
+            padding: 16px;
+            margin-bottom: 16px;
             border: 1px solid rgba(0,0,0,0.05);
         }
 
-        .card-content { padding: 16px; }
         .card-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-        .card-desc { font-size: 14px; color: var(--hint); margin-bottom: 12px; line-height: 1.4; }
-        
-        .price-tag {
-            font-size: 18px; font-weight: 800; color: var(--btn);
-            margin-bottom: 12px; display: block;
-        }
+        .card-desc { font-size: 14px; color: var(--hint); margin-bottom: 12px; }
 
-        .buy-btn {
-            background-color: var(--btn);
-            color: var(--btn-text);
-            border: none; border-radius: 12px;
+        button {
+            width: 100%; border: none; border-radius: 12px;
             padding: 12px; font-size: 16px; font-weight: 600;
-            cursor: pointer; transition: opacity 0.2s;
+            cursor: pointer;
         }
 
-        .buy-btn:active { opacity: 0.7; }
+        .buy-btn { background-color: var(--btn); color: var(--btn-text); }
+        .watch-btn { background-color: #4CAF50; color: white; }
+
+        /* Модальное окно для видео */
+        #videoModal {
+            display: none; position: fixed; top: 0; left: 0;
+            width: 100%; height: 100%; background: rgba(0,0,0,0.95);
+            z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
+        }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>FitTop Studio</h1>
-        <p>Выбери свой путь к идеальному телу</p>
-    </div>
 
-    <div class="card">
-        <div class="card-content">
-            <div class="card-title">🔥 Пресс за 30 дней</div>
-            <div class="card-desc">Интенсивная программа для дома. Видео-уроки, техника упражнений и план питания.</div>
-            <span class="price-tag">150 000 UZS</span>
-            <button class="buy-btn" onclick="sendData('abs_30')">Купить доступ</button>
+    <div id="catalog">
         </div>
-    </div>
 
-    <div class="card">
-        <div class="card-content">
-            <div class="card-title">💪 Крепкая спина</div>
-            <div class="card-desc">Оздоровительный курс для тех, кто много работает за компьютером.</div>
-            <span class="price-tag">120 000 UZS</span>
-            <button class="buy-btn" onclick="sendData('back_health')">Купить доступ</button>
-        </div>
+    <div id="videoModal">
+        <button onclick="closeVideo()" style="position:absolute; top:20px; right:20px; width:40px;">✕</button>
+        <div id="playerContainer" style="width:100%; aspect-ratio:16/9;"></div>
     </div>
 
     <script>
@@ -84,9 +65,70 @@
         tg.ready();
         tg.expand();
 
-        function sendData(id) {
+        // 1. Наш контент (база данных программ)
+        const programs = [
+            {
+                id: 'abs_30',
+                title: '🔥 Пресс за 30 дней',
+                desc: 'Интенсивный курс для стального пресса.',
+                price: '150 000 UZS',
+                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ' // Замени на свое
+            },
+            {
+                id: 'back_health',
+                title: '💪 Здоровая спина',
+                desc: 'Упражнения для осанки и снятия боли.',
+                price: '120 000 UZS',
+                videoUrl: 'https://www.youtube.com/embed/3AtDnEC4zak'
+            }
+        ];
+
+        // 2. Получаем список купленных программ из URL (?bought=abs_30,back_health)
+        const urlParams = new URLSearchParams(window.location.search);
+        const boughtData = urlParams.get('bought') || "";
+        const boughtPrograms = boughtData.split(',');
+
+        // 3. Функция отрисовки каталога
+        function render() {
+            const container = document.getElementById('catalog');
+            container.innerHTML = '';
+
+            programs.forEach(p => {
+                const isBought = boughtPrograms.includes(p.id);
+                
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.innerHTML = `
+                    <div class="card-title">${p.title}</div>
+                    <div class="card-desc">${p.desc}</div>
+                    ${isBought 
+                        ? `<button class="watch-btn" onclick="openVideo('${p.id}')">▶ Смотреть курс</button>`
+                        : `<button class="buy-btn" onclick="buy('${p.id}')">Купить за ${p.price}</button>`
+                    }
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // 4. Действия
+        function buy(id) {
             tg.sendData(JSON.stringify({program_id: id}));
         }
+
+        function openVideo(id) {
+            const p = programs.find(item => item.id === id);
+            document.getElementById('playerContainer').innerHTML = `
+                <iframe width="100%" height="100%" src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe>
+            `;
+            document.getElementById('videoModal').style.display = 'flex';
+        }
+
+        function closeVideo() {
+            document.getElementById('videoModal').style.display = 'none';
+            document.getElementById('playerContainer').innerHTML = '';
+        }
+
+        render();
     </script>
 </body>
 </html>
