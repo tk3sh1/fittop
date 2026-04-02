@@ -71,11 +71,14 @@
         // 1. Наш контент (база данных программ)
         const programs = [
             {
-                id: 'month_abs_pack', // Было 'abs_30', меняем на то, что в базе
+                id: 'month_abs_pack',
                 title: '🔥 Пресс за 30 дней',
                 desc: 'Интенсивный курс для стального пресса.',
-                price: '150 000 UZS',
-                videoUrl: 'https://www.youtube.com/embed/dQw4w9WgXcQ'
+                lessons: [
+                    { id: 1, title: 'День 1: Базовый уровень', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+                    { id: 2, title: 'День 2: Работа над косыми мышцами', url: 'https://www.youtube.com/embed/3AtDnEC4zak' },
+                    { id: 3, title: 'День 3: Нижний пресс', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
+                ]
             },
             {
                 id: 'back_health',
@@ -86,10 +89,10 @@
             }
         ];
 
-        // 2. Получаем список купленных программ из URL (?bought=abs_30,back_health)
+        // 2. Получаем прогресс из URL
         const urlParams = new URLSearchParams(window.location.search);
-        const boughtData = urlParams.get('bought') || "";
-        const boughtPrograms = boughtData.split(',');
+        const completedData = urlParams.get('completed') || "";
+        const completedLessons = completedData.split(',').map(Number); // [1, 2]
 
         // Получаем параметры из URL
         const completedData = urlParams.get('completed') || "";
@@ -102,24 +105,48 @@
         
             programs.forEach(p => {
                 const isBought = boughtPrograms.includes(p.id);
-                const isDone = completedLessons.includes(1); // Для примера проверяем 1-й урок
-        
-                container.innerHTML += `
-                    <div class="card" style="${isDone ? 'border: 2px solid #4CAF50;' : ''}">
-                        <div class="card-title">${p.title} ${isDone ? '✅' : ''}</div>
+                
+                let html = `
+                    <div class="card">
+                        <div class="card-title">${p.title}</div>
                         <div class="card-desc">${p.desc}</div>
-                        ${isBought 
-                            ? `
-                                <button class="watch-btn" onclick="openVideo('${p.id}')">▶ Смотреть</button>
-                                <button onclick="markDone('${p.id}', 1)" style="margin-top:8px; background:none; color:var(--hint); font-size:12px;">
-                                    ${isDone ? 'Выполнено' : 'Отметить как выполненное'}
-                                </button>
-                              `
-                            : `<button class="buy-btn" onclick="buy('${p.id}')">Купить за ${p.price}</button>`
-                        }
-                    </div>
                 `;
+        
+                if (isBought) {
+                    // Если куплено — показываем список уроков
+                    html += `<div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">`;
+                    p.lessons.forEach(lesson => {
+                        const isDone = completedLessons.includes(lesson.id);
+                        html += `
+                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:8px; background:var(--bg); border-radius:8px;">
+                                <span style="font-size:14px; ${isDone ? 'text-decoration:line-through; color:var(--hint);' : ''}">
+                                    ${isDone ? '✅' : '⚪️'} ${lesson.title}
+                                </span>
+                                <div style="display:flex; gap:5px;">
+                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')" style="width:auto; padding:5px 10px; font-size:12px;">Смотреть</button>
+                                    ${!isDone ? `<button onclick="markDone('${p.id}', ${lesson.id})" style="width:auto; padding:5px 10px; font-size:12px; background:#eee; color:black;">Готово</button>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    });
+                    html += `</div>`;
+                } else {
+                    // Если не куплено — просто кнопка купить
+                    html += `<button class="buy-btn" onclick="buy('${p.id}')">Купить за 150 000 UZS</button>`;
+                }
+        
+                html += `</div>`;
+                container.innerHTML += html;
             });
+        }
+        
+        function markDone(programId, lessonId) {
+            // Отправляем JSON боту
+            tg.sendData(JSON.stringify({
+                action: 'complete_lesson',
+                program_id: programId,
+                lesson_id: lessonId
+            }));
         }
 
         // 4. Действия
