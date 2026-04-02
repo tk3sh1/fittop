@@ -14,27 +14,104 @@
             --btn-text: var(--tg-theme-button-text-color, #ffffff);
             --sec-bg: var(--tg-theme-secondary-bg-color, #f4f4f5);
         }
-
-        body {
-            font-family: -apple-system, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0; padding: 16px;
-        }
-
-        .card {
-            background-color: var(--sec-bg);
-            border-radius: 16px;
-            padding: 16px;
-            margin-bottom: 16px;
-            border: 1px solid rgba(0,0,0,0.05);
-        }
-
+        body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; }
+        .card { background-color: var(--sec-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.05); }
         .card-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-        .card-desc { font-size: 14px; color: var(--hint); margin-bottom: 12px; }
+        .lesson-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: var(--bg); border-radius: 10px; border: 1px solid rgba(0,0,0,0.03); }
+        button { border: none; border-radius: 10px; padding: 10px; font-weight: 600; cursor: pointer; }
+        .buy-btn { width: 100%; background-color: var(--btn); color: var(--btn-text); }
+        .watch-btn { background-color: #4CAF50; color: white; font-size: 12px; }
+        .done-btn { background-color: var(--hint); color: white; font-size: 12px; opacity: 0.6; }
+        #videoModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
+    </style>
+</head>
+<body>
 
-        button {
-            width: 100%; border: none; border-radius: 12px;
+    <div id="catalog"></div>
+
+    <div id="videoModal">
+        <button onclick="closeVideo()" style="position:absolute; top:20px; right:20px; width:40px; background:white;">✕</button>
+        <div id="playerContainer" style="width:100%; aspect-ratio:16/9;"></div>
+    </div>
+
+    <script>
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand();
+
+        // Данные
+        const programs = [
+            {
+                id: 'month_abs_pack',
+                title: '🔥 Пресс за 30 дней',
+                desc: 'Интенсивный курс для стального пресса.',
+                lessons: [
+                    { id: 1, title: 'Урок 1: Разминка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+                    { id: 2, title: 'Урок 2: Пресс', url: 'https://www.youtube.com/embed/3AtDnEC4zak' }
+                ]
+            }
+        ];
+
+        // Парсим параметры из URL
+        const urlParams = new URLSearchParams(window.location.search);
+        const boughtStr = urlParams.get('bought') || "";
+        const completedStr = urlParams.get('completed') || "";
+        
+        const boughtPrograms = boughtStr.split(',');
+        const completedLessons = completedStr.split(',').map(Number);
+
+        function render() {
+            const container = document.getElementById('catalog');
+            container.innerHTML = '';
+
+            programs.forEach(p => {
+                const isBought = boughtPrograms.includes(p.id);
+                let cardHtml = `<div class="card"><div class="card-title">${p.title}</div>`;
+
+                if (isBought) {
+                    p.lessons.forEach(lesson => {
+                        const isDone = completedLessons.includes(lesson.id);
+                        cardHtml += `
+                            <div class="lesson-item">
+                                <span style="${isDone ? 'text-decoration:line-through; color:gray;' : ''}">${isDone ? '✅' : '⚪️'} ${lesson.title}</span>
+                                <div style="display:flex; gap:5px;">
+                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')">▶</button>
+                                    ${!isDone ? `<button class="watch-btn" style="background:#3390ec;" onclick="markDone('${p.id}', ${lesson.id})">Готово</button>` : ''}
+                                </div>
+                            </div>`;
+                    });
+                } else {
+                    cardHtml += `<p style="font-size:14px; color:gray;">${p.desc}</p>`;
+                    cardHtml += `<button class="buy-btn" onclick="buy('${p.id}')">Купить доступ</button>`;
+                }
+
+                cardHtml += `</div>`;
+                container.innerHTML += cardHtml;
+            });
+        }
+
+        function buy(id) {
+            tg.sendData(JSON.stringify({program_id: id}));
+        }
+
+        function markDone(pId, lId) {
+            tg.sendData(JSON.stringify({action: 'complete_lesson', program_id: pId, lesson_id: lId}));
+        }
+
+        function openVideo(url) {
+            document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
+            document.getElementById('videoModal').style.display = 'flex';
+        }
+
+        function closeVideo() {
+            document.getElementById('videoModal').style.display = 'none';
+            document.getElementById('playerContainer').innerHTML = '';
+        }
+
+        render();
+    </script>
+</body>
+</html>            width: 100%; border: none; border-radius: 12px;
             padding: 12px; font-size: 16px; font-weight: 600;
             cursor: pointer;
         }
