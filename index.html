@@ -17,121 +17,15 @@
         body { font-family: -apple-system, sans-serif; background-color: var(--bg); color: var(--text); margin: 0; padding: 16px; }
         .card { background-color: var(--sec-bg); border-radius: 16px; padding: 16px; margin-bottom: 16px; border: 1px solid rgba(0,0,0,0.05); }
         .card-title { font-size: 18px; font-weight: bold; margin-bottom: 8px; }
-        .lesson-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: var(--bg); border-radius: 10px; border: 1px solid rgba(0,0,0,0.03); }
+        .lesson-item { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; padding: 10px; background: var(--bg); border-radius: 10px; }
         button { border: none; border-radius: 10px; padding: 10px; font-weight: 600; cursor: pointer; }
         .buy-btn { width: 100%; background-color: var(--btn); color: var(--btn-text); }
-        .watch-btn { background-color: #4CAF50; color: white; font-size: 12px; }
-        .done-btn { background-color: var(--hint); color: white; font-size: 12px; opacity: 0.6; }
+        .watch-btn { background-color: #4CAF50; color: white; }
         #videoModal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); z-index: 1000; flex-direction: column; align-items: center; justify-content: center; }
     </style>
 </head>
 <body>
-
     <div id="catalog"></div>
-
-    <div id="videoModal">
-        <button onclick="closeVideo()" style="position:absolute; top:20px; right:20px; width:40px; background:white;">✕</button>
-        <div id="playerContainer" style="width:100%; aspect-ratio:16/9;"></div>
-    </div>
-
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
-
-        // Данные
-        const programs = [
-            {
-                id: 'month_abs_pack',
-                title: '🔥 Пресс за 30 дней',
-                desc: 'Интенсивный курс для стального пресса.',
-                lessons: [
-                    { id: 1, title: 'Урок 1: Разминка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-                    { id: 2, title: 'Урок 2: Пресс', url: 'https://www.youtube.com/embed/3AtDnEC4zak' }
-                ]
-            }
-        ];
-
-        // Парсим параметры из URL
-        const urlParams = new URLSearchParams(window.location.search);
-        const boughtStr = urlParams.get('bought') || "";
-        const completedStr = urlParams.get('completed') || "";
-        
-        const boughtPrograms = boughtStr.split(',');
-        const completedLessons = completedStr.split(',').map(Number);
-
-        function render() {
-            const container = document.getElementById('catalog');
-            container.innerHTML = '';
-
-            programs.forEach(p => {
-                const isBought = boughtPrograms.includes(p.id);
-                let cardHtml = `<div class="card"><div class="card-title">${p.title}</div>`;
-
-                if (isBought) {
-                    p.lessons.forEach(lesson => {
-                        const isDone = completedLessons.includes(lesson.id);
-                        cardHtml += `
-                            <div class="lesson-item">
-                                <span style="${isDone ? 'text-decoration:line-through; color:gray;' : ''}">${isDone ? '✅' : '⚪️'} ${lesson.title}</span>
-                                <div style="display:flex; gap:5px;">
-                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')">▶</button>
-                                    ${!isDone ? `<button class="watch-btn" style="background:#3390ec;" onclick="markDone('${p.id}', ${lesson.id})">Готово</button>` : ''}
-                                </div>
-                            </div>`;
-                    });
-                } else {
-                    cardHtml += `<p style="font-size:14px; color:gray;">${p.desc}</p>`;
-                    cardHtml += `<button class="buy-btn" onclick="buy('${p.id}')">Купить доступ</button>`;
-                }
-
-                cardHtml += `</div>`;
-                container.innerHTML += cardHtml;
-            });
-        }
-
-        function buy(id) {
-            tg.sendData(JSON.stringify({program_id: id}));
-        }
-
-        function markDone(pId, lId) {
-            tg.sendData(JSON.stringify({action: 'complete_lesson', program_id: pId, lesson_id: lId}));
-        }
-
-        function openVideo(url) {
-            document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
-            document.getElementById('videoModal').style.display = 'flex';
-        }
-
-        function closeVideo() {
-            document.getElementById('videoModal').style.display = 'none';
-            document.getElementById('playerContainer').innerHTML = '';
-        }
-
-        render();
-    </script>
-</body>
-</html>            width: 100%; border: none; border-radius: 12px;
-            padding: 12px; font-size: 16px; font-weight: 600;
-            cursor: pointer;
-        }
-
-        .buy-btn { background-color: var(--btn); color: var(--btn-text); }
-        .watch-btn { background-color: #4CAF50; color: white; }
-
-        /* Модальное окно для видео */
-        #videoModal {
-            display: none; position: fixed; top: 0; left: 0;
-            width: 100%; height: 100%; background: rgba(0,0,0,0.95);
-            z-index: 1000; flex-direction: column; align-items: center; justify-content: center;
-        }
-    </style>
-</head>
-<body>
-
-    <div id="catalog">
-        </div>
-
     <div id="videoModal">
         <button onclick="closeVideo()" style="position:absolute; top:20px; right:20px; width:40px;">✕</button>
         <div id="playerContainer" style="width:100%; aspect-ratio:16/9;"></div>
@@ -141,109 +35,58 @@
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
-        
-        // ДОБАВЬ ЭТУ СТРОКУ ДЛЯ ПРОВЕРКИ:
-        alert("Параметры в ссылке: " + window.location.search);
-        
-        // 1. Наш контент (база данных программ)
-        const programs = [
-            {
-                id: 'month_abs_pack',
-                title: '🔥 Пресс за 30 дней',
-                desc: 'Интенсивный курс для стального пресса.',
-                lessons: [
-                    { id: 1, title: 'День 1: Базовый уровень', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-                    { id: 2, title: 'День 2: Работа над косыми мышцами', url: 'https://www.youtube.com/embed/3AtDnEC4zak' },
-                    { id: 3, title: 'День 3: Нижний пресс', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
-                ]
-            },
-            {
-                id: 'back_health',
-                title: '💪 Здоровая спина',
-                desc: 'Упражнения для осанки и снятия боли.',
-                price: '120 000 UZS',
-                videoUrl: 'https://www.youtube.com/embed/3AtDnEC4zak'
-            }
-        ];
 
-        // 2. Получаем прогресс из URL
+        const programs = [{
+            id: 'month_abs_pack',
+            title: '🔥 Пресс за 30 дней',
+            desc: 'Интенсивный курс для стального пресса.',
+            lessons: [
+                { id: 1, title: 'Урок 1: Разминка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+                { id: 2, title: 'Урок 2: Пресс', url: 'https://www.youtube.com/embed/3AtDnEC4zak' }
+            ]
+        }];
+
         const urlParams = new URLSearchParams(window.location.search);
-        const completedData = urlParams.get('completed') || "";
-        const completedLessons = completedData.split(',').map(Number); // [1, 2]
+        const boughtPrograms = (urlParams.get('bought') || "").split(',');
+        const completedLessons = (urlParams.get('completed') || "").split(',').map(Number);
 
-        // Получаем параметры из URL
-        const completedData = urlParams.get('completed') || "";
-        const completedLessons = completedData.split(',').map(Number);
-        
-        // 3. Функция отрисовки каталога
         function render() {
             const container = document.getElementById('catalog');
             container.innerHTML = '';
-        
+
             programs.forEach(p => {
                 const isBought = boughtPrograms.includes(p.id);
-                
-                let html = `
-                    <div class="card">
-                        <div class="card-title">${p.title}</div>
-                        <div class="card-desc">${p.desc}</div>
-                `;
-        
+                let html = `<div class="card"><div class="card-title">${p.title}</div>`;
+
                 if (isBought) {
-                    // Если куплено — показываем список уроков
-                    html += `<div style="margin-top:10px; border-top:1px solid #eee; padding-top:10px;">`;
                     p.lessons.forEach(lesson => {
                         const isDone = completedLessons.includes(lesson.id);
                         html += `
-                            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px; padding:8px; background:var(--bg); border-radius:8px;">
-                                <span style="font-size:14px; ${isDone ? 'text-decoration:line-through; color:var(--hint);' : ''}">
-                                    ${isDone ? '✅' : '⚪️'} ${lesson.title}
-                                </span>
+                            <div class="lesson-item">
+                                <span style="${isDone ? 'text-decoration:line-through; color:gray;' : ''}">${isDone ? '✅' : '⚪️'} ${lesson.title}</span>
                                 <div style="display:flex; gap:5px;">
-                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')" style="width:auto; padding:5px 10px; font-size:12px;">Смотреть</button>
-                                    ${!isDone ? `<button onclick="markDone('${p.id}', ${lesson.id})" style="width:auto; padding:5px 10px; font-size:12px; background:#eee; color:black;">Готово</button>` : ''}
+                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')">▶</button>
+                                    ${!isDone ? `<button class="watch-btn" style="background:#3390ec;" onclick="markDone('${p.id}', ${lesson.id})">Готово</button>` : ''}
                                 </div>
-                            </div>
-                        `;
+                            </div>`;
                     });
-                    html += `</div>`;
                 } else {
-                    // Если не куплено — просто кнопка купить
-                    html += `<button class="buy-btn" onclick="buy('${p.id}')">Купить за 150 000 UZS</button>`;
+                    html += `<p>${p.desc}</p><button class="buy-btn" onclick="buy('${p.id}')">Купить доступ</button>`;
                 }
-        
-                html += `</div>`;
-                container.innerHTML += html;
+                container.innerHTML += html + `</div>`;
             });
         }
-        
-        function markDone(programId, lessonId) {
-            // Отправляем JSON боту
-            tg.sendData(JSON.stringify({
-                action: 'complete_lesson',
-                program_id: programId,
-                lesson_id: lessonId
-            }));
-        }
 
-        // 4. Действия
-        function buy(id) {
-            tg.sendData(JSON.stringify({program_id: id}));
-        }
-
-        function openVideo(id) {
-            const p = programs.find(item => item.id === id);
-            document.getElementById('playerContainer').innerHTML = `
-                <iframe width="100%" height="100%" src="${p.videoUrl}" frameborder="0" allowfullscreen></iframe>
-            `;
+        function buy(id) { tg.sendData(JSON.stringify({program_id: id})); }
+        function markDone(pId, lId) { tg.sendData(JSON.stringify({action: 'complete_lesson', program_id: pId, lesson_id: lId})); }
+        function openVideo(url) {
+            document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
             document.getElementById('videoModal').style.display = 'flex';
         }
-
         function closeVideo() {
             document.getElementById('videoModal').style.display = 'none';
             document.getElementById('playerContainer').innerHTML = '';
         }
-
         render();
     </script>
 </body>
