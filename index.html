@@ -34,76 +34,104 @@
         <div id="playerContainer" style="width:100%; aspect-ratio:16/9;"></div>
     </div>
 
-    <script>
-        const tg = window.Telegram.WebApp;
-        tg.ready();
-        tg.expand();
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
 
-        const programs = [{
-            id: 'month_abs_pack',
-            title: '🔥 Пресс за 30 дней',
-            desc: 'Интенсивный курс для стального пресса.',
-            lessons: [
-                { id: 1, title: 'Урок 1: Разминка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
-                { id: 2, title: 'Урок 2: Базовые скручивания', url: 'https://www.youtube.com/embed/3AtDnEC4zak' },
-                { id: 3, title: 'Урок 3: Планка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
-            ]
-        }];
+    // 1. ВСТАВЬ СВОЙ АДРЕС ИЗ NGROK ТУТ
+    const NGROK_URL = "https://твой-адрес.ngrok-free.app"; 
 
-        const urlParams = new URLSearchParams(window.location.search);
-        const boughtPrograms = (urlParams.get('bought') || "").split(',');
-        const completedLessons = (urlParams.get('completed') || "").split(',').map(Number);
+    let boughtPrograms = [];
+    let completedLessons = [];
 
-        function render() {
-            const container = document.getElementById('catalog');
-            container.innerHTML = '';
+    const programs = [{
+        id: 'month_abs_pack',
+        title: '🔥 Пресс за 30 дней',
+        desc: 'Интенсивный курс для стального пресса.',
+        lessons: [
+            { id: 1, title: 'Урок 1: Разминка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' },
+            { id: 2, title: 'Урок 2: Базовые скручивания', url: 'https://www.youtube.com/embed/3AtDnEC4zak' },
+            { id: 3, title: 'Урок 3: Планка', url: 'https://www.youtube.com/embed/dQw4w9WgXcQ' }
+        ]
+    }];
 
-            programs.forEach(p => {
-                const isBought = boughtPrograms.includes(p.id);
-                let html = `<div class="card"><div class="card-title">${p.title}</div>`;
-
-                if (isBought) {
-                    p.lessons.forEach(lesson => {
-                        const isDone = completedLessons.includes(lesson.id);
-                        html += `
-                            <div class="lesson-item">
-                                <span style="${isDone ? 'text-decoration:line-through; color:gray;' : ''}">${isDone ? '✅' : '⚪️'} ${lesson.title}</span>
-                                <div style="display:flex; gap:5px;">
-                                    <button class="watch-btn" onclick="openVideo('${lesson.url}')">▶</button>
-                                    ${!isDone ? `<button class="watch-btn" style="background:#3390ec;" onclick="markDone('${p.id}', ${lesson.id})">Готово</button>` : ''}
-                                </div>
-                            </div>`;
-                    });
-                } else {
-                    html += `<p style="font-size:14px; color:gray;">${p.desc}</p>`;
-                    html += `<button class="buy-btn" onclick="buy('${p.id}')">Купить за 150 000 UZS</button>`;
-                }
-                container.innerHTML += html + `</div>`;
-            });
+    // Функция автоматической синхронизации
+    async function syncData() {
+        const user = tg.initDataUnsafe.user;
+        if (!user) {
+            console.error("Пользователь не найден");
+            render();
+            return;
         }
 
-        function buy(id) { tg.sendData(JSON.stringify({program_id: id})); }
-        function markDone(pId, lId) {
-            // Сохраняем в облако Telegram (лимит 1кб на ключ)
-            const key = `progress_${pId}`;
-            completedLessons.push(lId);
+        try {
+            // Запрос к нашему API через ngrok
+            const response = await fetch(`${NGROK_URL}/api/check?user_id=${user.id}`);
+            const data = await response.json();
             
-            tg.CloudStorage.setItem(key, completedLessons.join(','), (err, success) => {
-                if (success) {
-                    render(); // Обновляем UI без закрытия окна
-                    tg.HapticFeedback.notificationOccurred('success'); // Вибрация "успех"
-                }
-            });
+            boughtPrograms = data.bought || [];
+            completedLessons = data.completed || [];
+            
+            console.log("Данные успешно синхронизированы");
+            render(); // Перерисовываем интерфейс с новыми данными
+        } catch (e) {
+            console.error("Ошибка при связи с сервером:", e);
+            render();
         }
-        function openVideo(url) {
-            document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
-            document.getElementById('videoModal').style.display = 'flex';
-        }
-        function closeVideo() {
-            document.getElementById('videoModal').style.display = 'none';
-            document.getElementById('playerContainer').innerHTML = '';
-        }
+    }
+
+    function render() {
+        const container = document.getElementById('catalog');
+        container.innerHTML = '';
+
+        programs.forEach(p => {
+            const isBought = boughtPrograms.includes(p.id);
+            let html = `<div class="card"><div class="card-title">${p.title}</div>`;
+
+            if (isBought) {
+                p.lessons.forEach(lesson => {
+                    const isDone = completedLessons.includes(lesson.id);
+                    html += `
+                        <div class="lesson-item">
+                            <span style="${isDone ? 'text-decoration:line-through; color:gray;' : ''}">${isDone ? '✅' : '⚪️'} ${lesson.title}</span>
+                            <div style="display:flex; gap:5px;">
+                                <button class="watch-btn" onclick="openVideo('${lesson.url}')">▶</button>
+                                ${!isDone ? `<button class="watch-btn" style="background:#3390ec;" onclick="markDone('${p.id}', ${lesson.id})">Готово</button>` : ''}
+                            </div>
+                        </div>`;
+                });
+            } else {
+                html += `<p style="font-size:14px; color:gray;">${p.desc}</p>`;
+                html += `<button class="buy-btn" onclick="buy('${p.id}')">Купить доступ</button>`;
+            }
+            container.innerHTML += html + `</div>`;
+        });
+    }
+
+    function buy(id) { tg.sendData(JSON.stringify({program_id: id})); }
+    
+    function markDone(pId, lId) {
+        // Оптимистично ставим галочку сразу
+        if (!completedLessons.includes(lId)) completedLessons.push(lId);
         render();
-    </script>
+        
+        // Отправляем данные боту (это закроет окно и пришлет поздравление)
+        tg.sendData(JSON.stringify({action: 'complete_lesson', program_id: pId, lesson_id: lId}));
+    }
+
+    function openVideo(url) {
+        document.getElementById('playerContainer').innerHTML = `<iframe width="100%" height="100%" src="${url}" frameborder="0" allowfullscreen></iframe>`;
+        document.getElementById('videoModal').style.display = 'flex';
+    }
+
+    function closeVideo() {
+        document.getElementById('videoModal').style.display = 'none';
+        document.getElementById('playerContainer').innerHTML = '';
+    }
+
+    // Запуск процесса при загрузке страницы
+    syncData();
+</script>
 </body>
 </html>
